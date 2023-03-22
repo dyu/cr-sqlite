@@ -4,6 +4,3 @@
 [submodule "js/deps/emsdk"]
 	path = js/deps/emsdk
 	url = git@github.com:emscripten-core/emsdk.git
-[submodule "js/deps/wa-sqlite"]
-	path = js/deps/wa-sqlite
-	url = git@github.com:vlcn-io/wa-sqlite.git
