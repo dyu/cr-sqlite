@@ -1,7 +1,7 @@
 {
-  "name": "@dyu/crsqlite-wasm",
+  "name": "@vlcn.io/crsqlite-wasm",
   "type": "module",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "files": [
     "dist",
     "dist/*",
