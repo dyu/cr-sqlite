@@ -26,7 +26,7 @@
     "directory": "https://github.com/vlcn-io/cr-sqlite/tree/main/js/browser/crsqlite"
   },
   "dependencies": {
-    "@vlcn.io/wa-sqlite": "workspace:*",
+    "@dyu/wa-sqlite": "workspace:*",
     "@vlcn.io/xplat-api": "workspace:*",
     "async-mutex": "^0.4.0"
   }
