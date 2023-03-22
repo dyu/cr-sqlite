@@ -1,9 +1,12 @@
 import SQLiteAsyncESMFactory from "@vlcn.io/wa-sqlite/dist/wa-sqlite-async.mjs";
+// @ts-ignore
+import wasmUrl from "@vlcn.io/wa-sqlite/dist/wa-sqlite-async.wasm?url";
 import * as SQLite from "@vlcn.io/wa-sqlite";
 // @ts-ignore
 import { IDBBatchAtomicVFS } from "@vlcn.io/wa-sqlite/src/examples/IDBBatchAtomicVFS.js";
 // @ts-ignore
 import { OriginPrivateFileSystemVFS } from "@vlcn.io/wa-sqlite/src/examples/OriginPrivateFileSystemVFS.js";
+
 import { serialize, topLevelMutex } from "./serialize.js";
 import { DB } from "./DB.js";
 export { DB } from "./DB.js";
@@ -53,10 +56,7 @@ export default async function initWasm(
 
   const wasmModule = await SQLiteAsyncESMFactory({
     locateFile(file: string) {
-      if (locateWasm) {
-        return locateWasm(file);
-      }
-      return new URL(file, import.meta.url).href;
+      return locateWasm ? locateWasm(file) : wasmUrl;
     },
   });
   const sqlite3 = SQLite.Factory(wasmModule);
