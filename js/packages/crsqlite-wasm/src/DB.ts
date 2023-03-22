@@ -1,5 +1,5 @@
 import { DBAsync, StmtAsync, TXAsync, UpdateType } from "@vlcn.io/xplat-api";
-import { SQLITE_UTF8 } from "@vlcn.io/wa-sqlite";
+import { SQLITE_UTF8 } from "@dyu/wa-sqlite";
 import { serialize, topLevelMutex } from "./serialize.js";
 import Stmt from "./Stmt.js";
 import TX from "./TX.js";

@@ -3,7 +3,7 @@ import { Mutex } from "async-mutex";
 import { computeCacheKey } from "./cache.js";
 import { serialize, serializeTx } from "./serialize.js";
 import Stmt from "./Stmt.js";
-import * as SQLite from "@vlcn.io/wa-sqlite";
+import * as SQLite from "@dyu/wa-sqlite";
 
 export default class TX implements TXAsync {
   private cache = new Map<string, Promise<any>>();

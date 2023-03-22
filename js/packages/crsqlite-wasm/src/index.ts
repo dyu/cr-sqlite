@@ -1,11 +1,11 @@
-import SQLiteAsyncESMFactory from "@vlcn.io/wa-sqlite/dist/wa-sqlite-async.mjs";
+import SQLiteAsyncESMFactory from "@dyu/wa-sqlite/dist/wa-sqlite-async.mjs";
 // @ts-ignore
-import wasmUrl from "@vlcn.io/wa-sqlite/dist/wa-sqlite-async.wasm?url";
-import * as SQLite from "@vlcn.io/wa-sqlite";
+import wasmUrl from "@dyu/wa-sqlite/dist/wa-sqlite-async.wasm?url";
+import * as SQLite from "@dyu/wa-sqlite";
 // @ts-ignore
-import { IDBBatchAtomicVFS } from "@vlcn.io/wa-sqlite/src/examples/IDBBatchAtomicVFS.js";
+import { IDBBatchAtomicVFS } from "@dyu/wa-sqlite/src/examples/IDBBatchAtomicVFS.js";
 // @ts-ignore
-import { OriginPrivateFileSystemVFS } from "@vlcn.io/wa-sqlite/src/examples/OriginPrivateFileSystemVFS.js";
+import { OriginPrivateFileSystemVFS } from "@dyu/wa-sqlite/src/examples/OriginPrivateFileSystemVFS.js";
 
 import { serialize, topLevelMutex } from "./serialize.js";
 import { DB } from "./DB.js";
