@@ -18,4 +18,6 @@ packages:
   - "js/packages/xplat-api"
   - "js/packages/xplat-tests"
   - "js/tsbuild-all"
+  # namespaced js/packages/crsqlite-wasm
+  - "js/packages/cr-sqlite"
   - "js/deps/wa-sqlite"
