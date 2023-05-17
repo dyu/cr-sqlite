@@ -20,6 +20,6 @@ git tag "$TAG_PREFIX@$VERSION" -am "$MSG"
 # publish
 git push origin "refs/tags/$TAG_PREFIX@$VERSION"
 git push -u origin master
-pnpm publish --access public
+pnpm publish --access public --no-git-checks
 
 echo "Released $VERSION"
