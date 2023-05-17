@@ -1,7 +1,6 @@
+import SQLiteAsyncESMFactory from "@dyu/wa-sqlite/dist/crsqlite.mjs";
 // @ts-ignore
-import SQLiteAsyncESMFactory from "@dyu/wa-sqlite/dist/wa-sqlite-async.mjs";
-// @ts-ignore
-import wasmUrl from "@dyu/wa-sqlite/dist/wa-sqlite-async.wasm?url";
+import wasmUrl from "@dyu/wa-sqlite/dist/crsqlite.wasm?url";
 import * as SQLite from "@dyu/wa-sqlite";
 // @ts-ignore
 import { IDBBatchAtomicVFS } from "@dyu/wa-sqlite/src/examples/IDBBatchAtomicVFS.js";
