@@ -176,6 +176,14 @@ version = "0.0.1"
 dependencies = [
  "cargo-valgrind",
  "cc",
+ "integration_utils",
+ "sqlite_nostd",
+]
+
+[[package]]
+name = "integration_utils"
+version = "0.0.1"
+dependencies = [
  "sqlite_nostd",
 ]
 

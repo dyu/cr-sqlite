@@ -1,5 +1,166 @@
 # @vlcn.io/sync-client
 
+## 0.9.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @vlcn.io/crsqlite-wasm@0.10.1-next.0
+
+## 0.9.0
+
+### Minor Changes
+
+- e0de95c: ANSI SQL compliance for crsql_changes, all filters available for crsql_changes, removal of tracked_peers, simplified crsql_master table
+
+### Patch Changes
+
+- 9b483aa: npm is not updating on package publish -- bump versions to try to force it
+- Updated dependencies [9b483aa]
+- Updated dependencies [e0de95c]
+  - @vlcn.io/client-server-common@0.6.0
+  - @vlcn.io/crsqlite-wasm@0.10.0
+  - @vlcn.io/client-core@0.9.0
+  - @vlcn.io/xplat-api@0.9.0
+  - @vlcn.io/rx-tbl@0.9.0
+
+## 0.9.0-next.1
+
+### Patch Changes
+
+- npm is not updating on package publish -- bump versions to try to force it
+- Updated dependencies
+  - @vlcn.io/client-server-common@0.6.0-next.1
+  - @vlcn.io/crsqlite-wasm@0.10.0-next.1
+  - @vlcn.io/client-core@0.9.0-next.1
+  - @vlcn.io/xplat-api@0.9.0-next.1
+  - @vlcn.io/rx-tbl@0.9.0-next.1
+
+## 0.9.0-next.0
+
+### Minor Changes
+
+- ANSI SQL compliance for crsql_changes, all filters available for crsql_changes, removal of tracked_peers, simplified crsql_master table
+
+### Patch Changes
+
+- Updated dependencies
+  - @vlcn.io/client-core@0.9.0-next.0
+  - @vlcn.io/client-server-common@0.6.0-next.0
+  - @vlcn.io/crsqlite-wasm@0.10.0-next.0
+  - @vlcn.io/rx-tbl@0.9.0-next.0
+  - @vlcn.io/xplat-api@0.9.0-next.0
+
+## 0.8.4
+
+### Patch Changes
+
+- @vlcn.io/crsqlite-wasm@0.9.4
+
+## 0.8.3
+
+### Patch Changes
+
+- e5919ae: fix xcommit deadlock, bump versions on dependencies
+- Updated dependencies [e5919ae]
+  - @vlcn.io/client-core@0.8.2
+  - @vlcn.io/client-server-common@0.5.2
+  - @vlcn.io/crsqlite-wasm@0.9.3
+  - @vlcn.io/rx-tbl@0.8.3
+  - @vlcn.io/xplat-api@0.8.2
+
+## 0.8.3-next.0
+
+### Patch Changes
+
+- fix xcommit deadlock, bump versions on dependencies
+- Updated dependencies
+  - @vlcn.io/client-core@0.8.2-next.0
+  - @vlcn.io/client-server-common@0.5.2-next.0
+  - @vlcn.io/crsqlite-wasm@0.9.3-next.0
+  - @vlcn.io/rx-tbl@0.8.3-next.0
+  - @vlcn.io/xplat-api@0.8.2-next.0
+
+## 0.8.2
+
+### Patch Changes
+
+- 2bbf074: nextjs fix and better reconnect on refocus for mobile
+- Updated dependencies [2bbf074]
+- Updated dependencies [c1ae5e3]
+- Updated dependencies [68ac663]
+- Updated dependencies [b1b77cf]
+  - @vlcn.io/crsqlite-wasm@0.9.2
+  - @vlcn.io/rx-tbl@0.8.2
+
+## 0.8.2-next.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @vlcn.io/rx-tbl@0.8.2-next.1
+
+## 0.8.2-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @vlcn.io/crsqlite-wasm@0.9.2-next.1
+
+## 0.8.2-next.1
+
+### Patch Changes
+
+- nextjs fix and better reconnect on refocus for mobile
+- Updated dependencies
+  - @vlcn.io/crsqlite-wasm@0.9.2-next.0
+
+## 0.8.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @vlcn.io/rx-tbl@0.8.2-next.0
+
+## 0.8.1
+
+### Patch Changes
+
+- 3921d8d: add missing type for workerUri
+- 3921d8d: allow passing of uri to worker script
+- aad733d: --
+- Updated dependencies [aad733d]
+  - @vlcn.io/client-core@0.8.1
+  - @vlcn.io/client-server-common@0.5.1
+  - @vlcn.io/crsqlite-wasm@0.9.1
+  - @vlcn.io/rx-tbl@0.8.1
+  - @vlcn.io/xplat-api@0.8.1
+
+## 0.8.1-next.2
+
+### Patch Changes
+
+- add missing type for workerUri
+
+## 0.8.1-next.1
+
+### Patch Changes
+
+- allow passing of uri to worker script
+
+## 0.8.1-next.0
+
+### Patch Changes
+
+---
+
+- Updated dependencies
+  - @vlcn.io/client-core@0.8.1-next.0
+  - @vlcn.io/client-server-common@0.5.1-next.0
+  - @vlcn.io/crsqlite-wasm@0.9.1-next.0
+  - @vlcn.io/rx-tbl@0.8.1-next.0
+  - @vlcn.io/xplat-api@0.8.1-next.0
+
 ## 0.8.0
 
 ### Minor Changes

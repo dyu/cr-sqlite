@@ -1,16 +1,3 @@
-/**
- * Copyright 2022 One Law LLC. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *     http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #ifndef CRSQLITE_CONSTS_H
 #define CRSQLITE_CONSTS_H
 
@@ -38,8 +25,7 @@
 
 #define TBL_SITE_ID "__crsql_siteid"
 #define TBL_DB_VERSION "__crsql_dbversion"
-#define TBL_SCHEMA "__crsql_master"
-#define TBL_SCHEMA_PROPS "__crsql_master_prop"
+#define TBL_SCHEMA "crsql_master"
 #define UNION "UNION"
 
 #define MAX_TBL_NAME_LEN 2048

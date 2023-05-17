@@ -1,16 +1,3 @@
-/**
- * Copyright 2022 One Law LLC. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *     http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #ifndef CRSQLITE_TABLEINFO_H
 #define CRSQLITE_TABLEINFO_H
 
@@ -50,6 +37,7 @@ crsql_ColumnInfo *crsql_extractBaseCols(crsql_ColumnInfo *colInfos,
 void crsql_freeColumnInfoContents(crsql_ColumnInfo *columnInfo);
 void crsql_freeTableInfo(crsql_TableInfo *tableInfo);
 
+// TODO: this should be pullTableInfo
 int crsql_getTableInfo(sqlite3 *db, const char *tblName,
                        crsql_TableInfo **pTableInfo, char **pErrMsg);
 

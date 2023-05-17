@@ -1,23 +1,10 @@
 /**
- * Copyright 2022 One Law LLC. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *     http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/**
  * The changes virtual table is an eponymous virtual table which can be used
  * to fetch and apply patches to a db.
  *
  * To fetch a changeset:
  * ```sql
- * SELECT * FROM crsql_chages WHERE site_id != SITE_ID AND version > V
+ * SELECT * FROM crsql_chages WHERE site_id IS NOT SITE_ID AND version > V
  * ```
  *
  * The site id parameter is used to prevent a site from fetching its own
@@ -58,7 +45,6 @@ SQLITE_EXTENSION_INIT3
 
 #include "crsqlite.h"
 #include "ext-data.h"
-#include "seen-peers.h"
 #include "tableinfo.h"
 
 extern sqlite3_module crsql_changesModule;
@@ -74,7 +60,6 @@ struct crsql_Changes_vtab {
   sqlite3_vtab base;
   sqlite3 *db;
 
-  crsql_SeenPeers *pSeenPeers;
   crsql_ExtData *pExtData;
 };
 

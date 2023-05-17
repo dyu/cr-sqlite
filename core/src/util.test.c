@@ -1,16 +1,3 @@
-/**
- * Copyright 2022 One Law LLC. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *     http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #include "util.h"
 
 #include <assert.h>
@@ -43,17 +30,23 @@ static void testGetVersionUnionQuery() {
   printf("GetVersionUnionQuery\n");
 
   query = crsql_getDbVersionUnionQuery(numRows_tc1, tableNames_tc1);
-  assert(strcmp(query,
-                "SELECT max(version) as version FROM (SELECT "
-                "max(__crsql_db_version) as version FROM \"foo\"  )") == 0);
+  assert(
+      strcmp(
+          query,
+          "SELECT max(version) as version FROM (SELECT max(__crsql_db_version) "
+          "as version FROM \"foo\"   UNION SELECT value as version FROM "
+          "crsql_master WHERE key = 'pre_compact_dbversion')") == 0);
   sqlite3_free(query);
 
   query = crsql_getDbVersionUnionQuery(numRows_tc2, tableNames_tc2);
-  assert(strcmp(query,
-                "SELECT max(version) as version FROM (SELECT "
-                "max(__crsql_db_version) as version FROM \"foo\" UNION SELECT "
-                "max(__crsql_db_version) as version FROM \"bar\" UNION SELECT "
-                "max(__crsql_db_version) as version FROM \"baz\"  )") == 0);
+  assert(
+      strcmp(
+          query,
+          "SELECT max(version) as version FROM (SELECT max(__crsql_db_version) "
+          "as version FROM \"foo\" UNION SELECT max(__crsql_db_version) as "
+          "version FROM \"bar\" UNION SELECT max(__crsql_db_version) as "
+          "version FROM \"baz\"   UNION SELECT value as version FROM "
+          "crsql_master WHERE key = 'pre_compact_dbversion')") == 0);
   sqlite3_free(query);
 
   printf("\t\e[0;32mSuccess\e[0m\n");

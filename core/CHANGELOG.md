@@ -1,5 +1,64 @@
 # @vlcn.io/crsqlite
 
+## 0.10.0
+
+### Minor Changes
+
+- e0de95c: ANSI SQL compliance for crsql_changes, all filters available for crsql_changes, removal of tracked_peers, simplified crsql_master table
+
+### Patch Changes
+
+- 9b483aa: npm is not updating on package publish -- bump versions to try to force it
+
+## 0.10.0-next.1
+
+### Patch Changes
+
+- npm is not updating on package publish -- bump versions to try to force it
+
+## 0.10.0-next.0
+
+### Minor Changes
+
+- ANSI SQL compliance for crsql_changes, all filters available for crsql_changes, removal of tracked_peers, simplified crsql_master table
+
+## 0.9.3
+
+### Patch Changes
+
+- release lock fix
+
+## 0.9.2
+
+### Patch Changes
+
+- e5919ae: fix xcommit deadlock, bump versions on dependencies
+
+## 0.9.2-next.0
+
+### Patch Changes
+
+- fix xcommit deadlock, bump versions on dependencies
+
+## 0.9.1
+
+### Patch Changes
+
+- 419ee8f: include makefile in pkg
+- aad733d: --
+
+## 0.9.1-next.1
+
+### Patch Changes
+
+- include makefile in pkg
+
+## 0.9.1-next.0
+
+### Patch Changes
+
+---
+
 ## 0.9.0
 
 ### Minor Changes

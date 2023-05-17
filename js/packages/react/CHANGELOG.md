@@ -1,5 +1,101 @@
 # @vlcn.io/react
 
+## 0.10.0
+
+### Minor Changes
+
+- e0de95c: ANSI SQL compliance for crsql_changes, all filters available for crsql_changes, removal of tracked_peers, simplified crsql_master table
+
+### Patch Changes
+
+- 9b483aa: npm is not updating on package publish -- bump versions to try to force it
+- Updated dependencies [9b483aa]
+- Updated dependencies [e0de95c]
+  - @vlcn.io/xplat-api@0.9.0
+  - @vlcn.io/rx-tbl@0.9.0
+
+## 0.10.0-next.1
+
+### Patch Changes
+
+- npm is not updating on package publish -- bump versions to try to force it
+- Updated dependencies
+  - @vlcn.io/xplat-api@0.9.0-next.1
+  - @vlcn.io/rx-tbl@0.9.0-next.1
+
+## 0.10.0-next.0
+
+### Minor Changes
+
+- ANSI SQL compliance for crsql_changes, all filters available for crsql_changes, removal of tracked_peers, simplified crsql_master table
+
+### Patch Changes
+
+- Updated dependencies
+  - @vlcn.io/rx-tbl@0.9.0-next.0
+  - @vlcn.io/xplat-api@0.9.0-next.0
+
+## 0.9.3
+
+### Patch Changes
+
+- e5919ae: fix xcommit deadlock, bump versions on dependencies
+- Updated dependencies [e5919ae]
+  - @vlcn.io/rx-tbl@0.8.3
+  - @vlcn.io/xplat-api@0.8.2
+
+## 0.9.3-next.0
+
+### Patch Changes
+
+- fix xcommit deadlock, bump versions on dependencies
+- Updated dependencies
+  - @vlcn.io/rx-tbl@0.8.3-next.0
+  - @vlcn.io/xplat-api@0.8.2-next.0
+
+## 0.9.2
+
+### Patch Changes
+
+- 68ac663: comply with react strict mode
+- Updated dependencies [c1ae5e3]
+- Updated dependencies [68ac663]
+  - @vlcn.io/rx-tbl@0.8.2
+
+## 0.9.2-next.1
+
+### Patch Changes
+
+- comply with react strict mode
+- Updated dependencies
+  - @vlcn.io/rx-tbl@0.8.2-next.1
+
+## 0.9.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @vlcn.io/rx-tbl@0.8.2-next.0
+
+## 0.9.1
+
+### Patch Changes
+
+- aad733d: --
+- Updated dependencies [aad733d]
+  - @vlcn.io/rx-tbl@0.8.1
+  - @vlcn.io/xplat-api@0.8.1
+
+## 0.9.1-next.0
+
+### Patch Changes
+
+---
+
+- Updated dependencies
+  - @vlcn.io/rx-tbl@0.8.1-next.0
+  - @vlcn.io/xplat-api@0.8.1-next.0
+
 ## 0.9.0
 
 ### Minor Changes

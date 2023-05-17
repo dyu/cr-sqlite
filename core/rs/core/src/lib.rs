@@ -1,103 +1,167 @@
-/*
- * Copyright 2023 One Law LLC. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *     http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 #![cfg_attr(not(test), no_std)]
-use sqlite_nostd::{sqlite3, Connection, Destructor, ManagedStmt, ResultCode};
+
+mod automigrate;
+mod backfill;
+mod is_crr;
+mod teardown;
+mod util;
+
+use core::{ffi::c_char, slice};
 extern crate alloc;
-use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
-
-/**
- * Backfills rows in a table with clock values.
- */
-pub fn backfill_table(
-    db: *mut sqlite3,
-    table: &str,
-    pk_cols: Vec<&str>,
-    non_pk_cols: Vec<&str>,
-) -> Result<ResultCode, ResultCode> {
-    db.exec_safe("SAVEPOINT backfill")?;
-
-    let sql = format!(
-      "SELECT {pk_cols} FROM \"{table}\" as t1
-        LEFT JOIN \"{table}__crsql_clock\" as t2 ON {pk_on_conditions} WHERE t2.\"{first_pk}\" IS NULL",
-      table = escape_ident(table),
-      pk_cols = pk_cols
-          .iter()
-          .map(|f| format!("t1.\"{}\"", escape_ident(f)))
-          .collect::<Vec<_>>()
-          .join(", "),
-      pk_on_conditions = pk_cols
-          .iter()
-          .map(|f| format!("t1.\"{}\" = t2.\"{}\"", escape_ident(f), escape_ident(f)))
-          .collect::<Vec<_>>()
-          .join(" AND "),
-      first_pk = escape_ident(pk_cols[0]),
-    );
-    let stmt = db.prepare_v2(&sql);
-
-    let result = match stmt {
-        Ok(stmt) => create_clock_rows_from_stmt(stmt, db, table, pk_cols, non_pk_cols),
-        Err(e) => Err(e),
-    };
-
-    if let Err(e) = result {
-        db.exec_safe("ROLLBACK TO backfill")?;
-        return Err(e);
-    }
-
-    Ok(ResultCode::OK)
-}
-
-fn create_clock_rows_from_stmt(
-    read_stmt: ManagedStmt,
-    db: *mut sqlite3,
-    table: &str,
-    pk_cols: Vec<&str>,
-    non_pk_cols: Vec<&str>,
-) -> Result<ResultCode, ResultCode> {
-    let write_stmt = db.prepare_v2(&format!(
-        "INSERT INTO \"{table}__crsql_clock\"
-          ({pk_cols}, __crsql_col_name, __crsql_col_version, __crsql_db_version) VALUES
-          ({pk_values}, ?, 1, crsql_nextdbversion())",
-        table = escape_ident(table),
-        pk_cols = pk_cols
-            .iter()
-            .map(|f| format!("\"{}\"", escape_ident(f)))
-            .collect::<Vec<_>>()
-            .join(", "),
-        pk_values = pk_cols.iter().map(|_| "?").collect::<Vec<_>>().join(", "),
-    ))?;
-
-    while read_stmt.step()? == ResultCode::ROW {
-        // bind primary key values
-        for (i, _name) in pk_cols.iter().enumerate() {
-            let value = read_stmt.column_value(i as i32)?;
-            write_stmt.bind_value(i as i32 + 1, value)?;
-        }
-
-        for col in non_pk_cols.iter() {
-            // We even backfill default values since we can't differentiate between an explicit
-            // reset to a default vs an implicit set to default on create.
-            write_stmt.bind_text(pk_cols.len() as i32 + 1, col, Destructor::STATIC)?;
-            write_stmt.step()?;
-            write_stmt.reset()?;
-        }
-    }
-
-    Ok(ResultCode::OK)
-}
+pub use automigrate::*;
+pub use backfill::*;
+use core::ffi::{c_int, CStr};
+pub use is_crr::*;
+use sqlite::ResultCode;
+use sqlite_nostd as sqlite;
+use sqlite_nostd::{context, Connection, Context, Value};
+pub use teardown::*;
 
 fn escape_ident(ident: &str) -> String {
     return ident.replace("\"", "\"\"");
+}
+
+pub extern "C" fn crsql_as_table(
+    ctx: *mut sqlite::context,
+    argc: i32,
+    argv: *mut *mut sqlite::value,
+) {
+    let args = sqlite::args!(argc, argv);
+    let db = ctx.db_handle();
+    let table = args[0].text();
+
+    if let Err(_) = db.exec_safe("SAVEPOINT as_table;") {
+        ctx.result_error("failed to start as_table savepoint");
+        return;
+    }
+
+    if let Err(_) = crsql_as_table_impl(db, table) {
+        ctx.result_error("failed to downgrade the crr");
+        if let Err(_) = db.exec_safe("ROLLBACK TO as_table;") {
+            // fine.
+        }
+        return;
+    }
+
+    if let Err(_) = db.exec_safe("RELEASE as_table;") {
+        // fine
+    }
+}
+
+fn crsql_as_table_impl(db: *mut sqlite::sqlite3, table: &str) -> Result<ResultCode, ResultCode> {
+    remove_crr_clock_table_if_exists(db, table)?;
+    remove_crr_triggers_if_exist(db, table)
+}
+
+#[no_mangle]
+pub extern "C" fn sqlite3_crsqlcore_init(
+    db: *mut sqlite::sqlite3,
+    _err_msg: *mut *mut c_char,
+    api: *mut sqlite::api_routines,
+) -> c_int {
+    sqlite::EXTENSION_INIT2(api);
+
+    let rc = db
+        .create_function_v2(
+            "crsql_automigrate",
+            1,
+            sqlite::UTF8,
+            None,
+            Some(crsql_automigrate),
+            None,
+            None,
+            None,
+        )
+        .unwrap_or(sqlite::ResultCode::ERROR);
+    if rc != ResultCode::OK {
+        return rc as c_int;
+    }
+
+    db.create_function_v2(
+        "crsql_as_table",
+        1,
+        sqlite::UTF8,
+        None,
+        Some(crsql_as_table),
+        None,
+        None,
+        None,
+    )
+    .unwrap_or(sqlite::ResultCode::ERROR) as c_int
+}
+
+#[no_mangle]
+pub extern "C" fn crsql_backfill_table(
+    context: *mut context,
+    table: *const c_char,
+    pk_cols: *const *const c_char,
+    pk_cols_len: c_int,
+    non_pk_cols: *const *const c_char,
+    non_pk_cols_len: c_int,
+    is_commit_alter: c_int,
+) -> c_int {
+    let table = unsafe { CStr::from_ptr(table).to_str() };
+    let pk_cols = unsafe {
+        let parts = slice::from_raw_parts(pk_cols, pk_cols_len as usize);
+        parts
+            .iter()
+            .map(|&p| CStr::from_ptr(p).to_str())
+            .collect::<Result<Vec<_>, _>>()
+    };
+    let non_pk_cols = unsafe {
+        let parts = slice::from_raw_parts(non_pk_cols, non_pk_cols_len as usize);
+        parts
+            .iter()
+            .map(|&p| CStr::from_ptr(p).to_str())
+            .collect::<Result<Vec<_>, _>>()
+    };
+
+    let result = match (table, pk_cols, non_pk_cols) {
+        (Ok(table), Ok(pk_cols), Ok(non_pk_cols)) => {
+            let db = context.db_handle();
+            backfill_table(db, table, pk_cols, non_pk_cols, is_commit_alter != 0)
+        }
+        _ => Err(ResultCode::ERROR),
+    };
+
+    match result {
+        Ok(result) => result as c_int,
+        Err(result) => result as c_int,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn crsql_remove_crr_triggers_if_exist(
+    db: *mut sqlite::sqlite3,
+    table: *const c_char,
+) -> c_int {
+    if let Ok(table) = unsafe { CStr::from_ptr(table).to_str() } {
+        let result = remove_crr_triggers_if_exist(db, table);
+        match result {
+            Ok(result) => result as c_int,
+            Err(result) => result as c_int,
+        }
+    } else {
+        ResultCode::NOMEM as c_int
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn crsql_is_crr(db: *mut sqlite::sqlite3, table: *const c_char) -> c_int {
+    if let Ok(table) = unsafe { CStr::from_ptr(table).to_str() } {
+        match is_crr(db, table) {
+            Ok(b) => {
+                if b {
+                    1
+                } else {
+                    0
+                }
+            }
+            Err(c) => (c as c_int) * -1,
+        }
+    } else {
+        (ResultCode::NOMEM as c_int) * -1
+    }
 }

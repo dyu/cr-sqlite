@@ -1,16 +1,3 @@
-/**
- * Copyright 2022 One Law LLC. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *     http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #include "triggers.h"
 
 #include <stdint.h>
@@ -270,35 +257,6 @@ int crsql_createCrrTriggers(sqlite3 *db, crsql_TableInfo *tableInfo,
   }
   if (rc == SQLITE_OK) {
     rc = crsql_createDeleteTrigger(db, tableInfo, err);
-  }
-
-  return rc;
-}
-
-int crsql_removeCrrTriggersIfExist(sqlite3 *db, const char *tblName,
-                                   char **err) {
-  char *zSql = 0;
-  int rc = SQLITE_OK;
-
-  zSql = sqlite3_mprintf("DROP TRIGGER IF EXISTS \"%s__crsql_itrig\"", tblName);
-  rc = sqlite3_exec(db, zSql, 0, 0, err);
-  sqlite3_free(zSql);
-  if (rc != SQLITE_OK) {
-    return rc;
-  }
-
-  zSql = sqlite3_mprintf("DROP TRIGGER IF EXISTS \"%s__crsql_utrig\"", tblName);
-  rc = sqlite3_exec(db, zSql, 0, 0, err);
-  sqlite3_free(zSql);
-  if (rc != SQLITE_OK) {
-    return rc;
-  }
-
-  zSql = sqlite3_mprintf("DROP TRIGGER IF EXISTS \"%s__crsql_dtrig\"", tblName);
-  rc = sqlite3_exec(db, zSql, 0, 0, err);
-  sqlite3_free(zSql);
-  if (rc != SQLITE_OK) {
-    return rc;
   }
 
   return rc;

@@ -17,6 +17,8 @@ packages:
   - "js/packages/server-websocket"
   - "js/packages/xplat-api"
   - "js/packages/xplat-tests"
+  - "js/packages/sandbox"
+  - "js/packages/sandbox-node"
   - "js/tsbuild-all"
   # namespaced js/packages/crsqlite-wasm
   - "js/packages/cr-sqlite"

@@ -1,5 +1,89 @@
 # @vlcn.io/rx-tbl
 
+## 0.9.0
+
+### Minor Changes
+
+- e0de95c: ANSI SQL compliance for crsql_changes, all filters available for crsql_changes, removal of tracked_peers, simplified crsql_master table
+
+### Patch Changes
+
+- 9b483aa: npm is not updating on package publish -- bump versions to try to force it
+- Updated dependencies [9b483aa]
+- Updated dependencies [e0de95c]
+  - @vlcn.io/xplat-api@0.9.0
+
+## 0.9.0-next.1
+
+### Patch Changes
+
+- npm is not updating on package publish -- bump versions to try to force it
+- Updated dependencies
+  - @vlcn.io/xplat-api@0.9.0-next.1
+
+## 0.9.0-next.0
+
+### Minor Changes
+
+- ANSI SQL compliance for crsql_changes, all filters available for crsql_changes, removal of tracked_peers, simplified crsql_master table
+
+### Patch Changes
+
+- Updated dependencies
+  - @vlcn.io/xplat-api@0.9.0-next.0
+
+## 0.8.3
+
+### Patch Changes
+
+- e5919ae: fix xcommit deadlock, bump versions on dependencies
+- Updated dependencies [e5919ae]
+  - @vlcn.io/xplat-api@0.8.2
+
+## 0.8.3-next.0
+
+### Patch Changes
+
+- fix xcommit deadlock, bump versions on dependencies
+- Updated dependencies
+  - @vlcn.io/xplat-api@0.8.2-next.0
+
+## 0.8.2
+
+### Patch Changes
+
+- c1ae5e3: do not dispose of the db
+- 68ac663: comply with react strict mode
+
+## 0.8.2-next.1
+
+### Patch Changes
+
+- comply with react strict mode
+
+## 0.8.2-next.0
+
+### Patch Changes
+
+- do not dispose of the db
+
+## 0.8.1
+
+### Patch Changes
+
+- aad733d: --
+- Updated dependencies [aad733d]
+  - @vlcn.io/xplat-api@0.8.1
+
+## 0.8.1-next.0
+
+### Patch Changes
+
+---
+
+- Updated dependencies
+  - @vlcn.io/xplat-api@0.8.1-next.0
+
 ## 0.8.0
 
 ### Minor Changes

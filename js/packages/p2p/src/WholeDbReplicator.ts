@@ -152,25 +152,27 @@ export class WholeDbReplicator {
       "SELECT name FROM sqlite_master WHERE name LIKE '%__crsql_clock'"
     );
 
-    const baseTableNames = crrs.map((crr) => {
+    const baseTableNames = crrs.map(async (crr) => {
       const fullTblName = crr[0];
       const baseTblName = fullTblName.substring(
         0,
         fullTblName.lastIndexOf("__crsql_clock")
       );
-      ["INSERT", "UPDATE", "DELETE"].map((verb) => {
-        this.db.exec(
-          `CREATE TEMP TRIGGER IF NOT EXISTS "${baseTblName}__crsql_wdbreplicator_${verb.toLowerCase()}" AFTER ${verb} ON "${baseTblName}"
+      await Promise.all(
+        ["INSERT", "UPDATE", "DELETE"].map(async (verb) => {
+          return await this.db.exec(
+            `CREATE TEMP TRIGGER IF NOT EXISTS "${baseTblName}__crsql_wdbreplicator_${verb.toLowerCase()}" AFTER ${verb} ON "${baseTblName}"
           BEGIN
             select crsql_wdbreplicator() WHERE crsql_internal_sync_bit() = 0;
           END;
         `
-        );
-      });
+          );
+        })
+      );
 
       return baseTblName;
     });
-    this.crrs = baseTableNames;
+    this.crrs = await Promise.all(baseTableNames);
   }
 
   private async createPeerTrackingTable() {
@@ -266,7 +268,7 @@ export class WholeDbReplicator {
         console.error(e);
         throw e;
       } finally {
-        stmt.finalize(tx);
+        await stmt.finalize(tx);
       }
 
       await tx.exec(
@@ -278,9 +280,8 @@ export class WholeDbReplicator {
 
   private changesRequested = async (from: SiteIDWire, since: bigint) => {
     const fromAsBlob = uuidParse(from);
-    // The casting is due to bigint support problems in various wasm builds of sqlite
     const changes: Changeset[] = await this.db.execA<Changeset>(
-      `SELECT "table", "pk", "cid", "val", "col_version", "db_version", "site_id" FROM crsql_changes WHERE site_id != ? AND db_version > ?`,
+      `SELECT "table", "pk", "cid", "val", "col_version", "db_version", COALESCE("site_id", crsql_siteid()) FROM crsql_changes WHERE site_id IS NOT ? AND db_version > ?`,
       [fromAsBlob, since]
     );
 

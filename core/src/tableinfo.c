@@ -1,16 +1,3 @@
-/**
- * Copyright 2022 One Law LLC. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *     http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #include "tableinfo.h"
 
 #include <assert.h>
@@ -438,42 +425,6 @@ int crsql_isTableCompatible(sqlite3 *db, const char *tblName, char **errmsg) {
           "checked "
           "foreign key constraints as they can be violated by row level "
           "security or replication.",
-          tblName);
-      return 0;
-    }
-  } else {
-    sqlite3_finalize(pStmt);
-    return 0;
-  }
-
-  // check for default value or nullable
-  zSql = sqlite3_mprintf(
-      "SELECT count(*) FROM pragma_table_xinfo('%s') WHERE \"notnull\" = 1 "
-      "AND "
-      "\"dflt_value\" IS NULL AND \"pk\" = 0",
-      tblName);
-  rc = sqlite3_prepare_v2(db, zSql, -1, &pStmt, 0);
-  sqlite3_free(zSql);
-
-  if (rc != SQLITE_OK) {
-    *errmsg = sqlite3_mprintf(
-        "Failed to analyze default value information for %s", tblName);
-    return 0;
-  }
-
-  rc = sqlite3_step(pStmt);
-  if (rc == SQLITE_ROW) {
-    int count = sqlite3_column_int(pStmt, 0);
-    sqlite3_finalize(pStmt);
-    if (count != 0) {
-      *errmsg = sqlite3_mprintf(
-          "Table %s has a NOT NULL column without a DEFAULT VALUE. This "
-          "is not "
-          "allowed as it prevents forwards and backwards compatability "
-          "between "
-          "schema versions. Make the column nullable or assign a default "
-          "value "
-          "to it.",
           tblName);
       return 0;
     }

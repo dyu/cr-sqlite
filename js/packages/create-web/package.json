@@ -1,6 +1,6 @@
 {
   "name": "@vlcn.io/create-web",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "scaffold a web project with crdt support",
   "homepage": "https://vlcn.io",
   "type": "module",
@@ -14,8 +14,6 @@
   "files": [
     "dist/**"
   ],
-  "dependencies": {
-  },
   "scripts": {
     "build": "tsc --build",
     "watch": "tsc --build -w",
@@ -30,7 +28,7 @@
     "crdt"
   ],
   "devDependencies": {
-    "typescript": "^4.8.4",
-    "vitest": "^0.25.0"
+    "typescript": "^5.0.4",
+    "vitest": "^0.30.1"
   }
 }

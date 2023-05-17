@@ -1,16 +1,3 @@
-/**
- * Copyright 2022 One Law LLC. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *     http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #include "ext-data.h"
 
 #include "consts.h"
@@ -37,18 +24,10 @@ crsql_ExtData *crsql_newExtData(sqlite3 *db) {
     sqlite3_finalize(pExtData->pPragmaSchemaVersionStmt);
     return 0;
   }
-  pExtData->pTrackPeersStmt = 0;
-  rc = sqlite3_prepare_v3(
-      db,
-      "INSERT INTO crsql_tracked_peers (\"site_id\", \"version\", "
-      "\"tag\", \"event\") VALUES (?, ?, ?, ?) ON CONFLICT DO UPDATE SET "
-      "\"version\" = "
-      "MAX(\"version\", EXCLUDED.\"version\")",
-      -1, SQLITE_PREPARE_PERSISTENT, &(pExtData->pTrackPeersStmt), 0);
+
   if (rc != SQLITE_OK) {
     sqlite3_finalize(pExtData->pPragmaDataVersionStmt);
     sqlite3_finalize(pExtData->pPragmaSchemaVersionStmt);
-    sqlite3_finalize(pExtData->pTrackPeersStmt);
     return 0;
   }
 
@@ -60,6 +39,7 @@ crsql_ExtData *crsql_newExtData(sqlite3 *db) {
   pExtData->pDbVersionStmt = 0;
   pExtData->zpTableInfos = 0;
   pExtData->tableInfosLen = 0;
+  pExtData->rowsImpacted = 0;
 
   rc = crsql_fetchPragmaDataVersion(db, pExtData);
   if (rc == -1) {
@@ -74,7 +54,6 @@ void crsql_freeExtData(crsql_ExtData *pExtData) {
   sqlite3_finalize(pExtData->pDbVersionStmt);
   sqlite3_finalize(pExtData->pPragmaSchemaVersionStmt);
   sqlite3_finalize(pExtData->pPragmaDataVersionStmt);
-  sqlite3_finalize(pExtData->pTrackPeersStmt);
   crsql_freeAllTableInfos(pExtData->zpTableInfos, pExtData->tableInfosLen);
   sqlite3_free(pExtData);
 }
@@ -88,11 +67,9 @@ void crsql_finalize(crsql_ExtData *pExtData) {
   sqlite3_finalize(pExtData->pDbVersionStmt);
   sqlite3_finalize(pExtData->pPragmaSchemaVersionStmt);
   sqlite3_finalize(pExtData->pPragmaDataVersionStmt);
-  sqlite3_finalize(pExtData->pTrackPeersStmt);
   pExtData->pDbVersionStmt = 0;
   pExtData->pPragmaSchemaVersionStmt = 0;
   pExtData->pPragmaDataVersionStmt = 0;
-  pExtData->pTrackPeersStmt = 0;
 }
 
 #define DB_VERSION_SCHEMA_VERSION 0
@@ -245,7 +222,7 @@ int crsql_fetchDbVersionFromStorage(sqlite3 *db, crsql_ExtData *pExtData,
 }
 
 /**
- * This will return the db version if it exists in `pExtData`
+ * This fills the dbVersion into `pExtData` if it is not already cached there
  *
  * If it does not exist there, it will fetch the current db version
  * from the database.

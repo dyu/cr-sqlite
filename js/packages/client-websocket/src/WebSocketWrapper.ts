@@ -1,13 +1,12 @@
 import { Socket } from "@vlcn.io/client-server-common";
-import {
-  Replicator,
-} from "@vlcn.io/client-core";
+import { Replicator } from "@vlcn.io/client-core";
 
 const defaultBackoff = 5000;
 export default class WebSocketWrapper implements Socket {
   private ws: WebSocket | null = null;
   private backoff: number = defaultBackoff;
   private reconnecting: boolean = false;
+  private timeoutHandle: number | null = null;
 
   constructor(
     private readonly uri: string,
@@ -49,7 +48,22 @@ export default class WebSocketWrapper implements Socket {
       };
       await this.replicator.start(this);
     };
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", this.#visChange);
+    }
   }
+
+  #visChange = () => {
+    if (document.visibilityState === "visible") {
+      this.backoff = defaultBackoff;
+      if (this.reconnecting && this.timeoutHandle != null) {
+        clearTimeout(this.timeoutHandle as number);
+        this.reconnecting = false;
+        this.#reconnect();
+      }
+    }
+  };
 
   onclose?: (code: number, reason: any) => void = undefined;
   onmessage?: (data: Uint8Array) => void = undefined;
@@ -66,6 +80,9 @@ export default class WebSocketWrapper implements Socket {
 
   close(code?: number | undefined, data?: any): void {
     this.ws?.close(code, data);
+    if (typeof document !== "undefined") {
+      document.removeEventListener("visibilitychange", this.#visChange);
+    }
   }
 
   removeAllListeners(): void {
@@ -82,7 +99,9 @@ export default class WebSocketWrapper implements Socket {
     this.reconnecting = true;
     const backoff = this.backoff;
     this.backoff = Math.min(60000, backoff * 2);
-    setTimeout(() => {
+    // @ts-ignore
+    this.timeoutHandle = setTimeout(() => {
+      this.timeoutHandle = null;
       this.reconnecting = false;
       this.start();
     }, backoff);

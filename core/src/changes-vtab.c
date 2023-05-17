@@ -1,16 +1,3 @@
-/**
- * Copyright 2022 One Law LLC. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *     http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #include "changes-vtab.h"
 
 #include <assert.h>
@@ -23,7 +10,6 @@
 #include "consts.h"
 #include "crsqlite.h"
 #include "ext-data.h"
-#include "seen-peers.h"
 #include "util.h"
 
 /**
@@ -59,7 +45,6 @@ static int changesConnect(sqlite3 *db, void *pAux, int argc,
   memset(pNew, 0, sizeof(*pNew));
   pNew->db = db;
   pNew->pExtData = (crsql_ExtData *)pAux;
-  pNew->pSeenPeers = crsql_newSeenPeers();
 
   rc = crsql_ensureTableInfosAreUpToDate(db, pNew->pExtData,
                                          &(*ppVtab)->zErrMsg);
@@ -80,7 +65,6 @@ static int changesConnect(sqlite3 *db, void *pAux, int argc,
  */
 static int changesDisconnect(sqlite3_vtab *pVtab) {
   crsql_Changes_vtab *p = (crsql_Changes_vtab *)pVtab;
-  crsql_freeSeenPeers(p->pSeenPeers);
   // ext data is free by other registered extensions
   sqlite3_free(p);
   return SQLITE_OK;
@@ -138,7 +122,8 @@ static int changesClose(sqlite3_vtab_cursor *cur) {
 
 /**
  * version is guaranteed to be unique (it increases on every write)
- * thus we use it for the rowid.
+ * thus we use it for the rowid. -- it isn't unique given we increment
+ * version once per transaction!
  *
  * Depending on how sqlite treats calls to `xUpdate` we may
  * shift to a `without rowid` table and use `table + pk` concated
@@ -147,6 +132,7 @@ static int changesClose(sqlite3_vtab_cursor *cur) {
  */
 static int changesRowid(sqlite3_vtab_cursor *cur, sqlite_int64 *pRowid) {
   crsql_Changes_cursor *pCur = (crsql_Changes_cursor *)cur;
+  // TODO: add invocation of rowid slab algorithm here
   *pRowid = pCur->dbVersion;
   return SQLITE_OK;
 }
@@ -328,8 +314,9 @@ static int changesColumn(
       break;
     case CHANGES_SINCE_VTAB_SITE_ID:
       if (sqlite3_column_type(pCur->pChangesStmt, SITE_ID) == SQLITE_NULL) {
-        sqlite3_result_blob(ctx, pCur->pTab->pExtData->siteId, SITE_ID_LEN,
-                            SQLITE_STATIC);
+        sqlite3_result_null(ctx);
+        // sqlite3_result_blob(ctx, pCur->pTab->pExtData->siteId, SITE_ID_LEN,
+        //                     SQLITE_STATIC);
       } else {
         sqlite3_result_value(ctx,
                              sqlite3_column_value(pCur->pChangesStmt, SITE_ID));
@@ -377,7 +364,7 @@ static int changesFilter(sqlite3_vtab_cursor *pVtabCursor, int idxNum,
   }
 
   char *zSql = crsql_changesUnionQuery(pTab->pExtData->zpTableInfos,
-                                       pTab->pExtData->tableInfosLen, idxNum);
+                                       pTab->pExtData->tableInfosLen, idxStr);
 
   if (zSql == 0) {
     pTabBase->zErrMsg = sqlite3_mprintf(
@@ -390,49 +377,62 @@ static int changesFilter(sqlite3_vtab_cursor *pVtabCursor, int idxNum,
   sqlite3_free(zSql);
   if (rc != SQLITE_OK) {
     pTabBase->zErrMsg = sqlite3_mprintf(
-        "crsql internal error preparing the statement to extract changes.");
+        "error preparing stmt to extract changes %s", sqlite3_errmsg(db));
     sqlite3_finalize(pStmt);
     return rc;
   }
 
-  // pull user provided params to `getChanges`
-  int i = 0;
-  sqlite3_int64 versionBound = MIN_POSSIBLE_DB_VERSION;
-  const char *requestorSiteId = "aa";
-  int siteIdType = SQLITE_BLOB;
-  int requestorSiteIdLen = 1;
-  if (idxNum & 2) {
-    versionBound = sqlite3_value_int64(argv[i]);
-    ++i;
-  }
-  if (idxNum & 4) {
-    siteIdType = sqlite3_value_type(argv[i]);
-    requestorSiteIdLen = sqlite3_value_bytes(argv[i]);
-    if (requestorSiteIdLen != 0) {
-      requestorSiteId = (const char *)sqlite3_value_blob(argv[i]);
-    } else {
-      requestorSiteIdLen = 1;
-    }
-    ++i;
-  }
-
   // now bind the params.
-  // for each table info we need to bind 2 params:
-  // 1. the site id
-  // 2. the version
-  int j = 1;
-  for (i = 0; i < pTab->pExtData->tableInfosLen; ++i) {
-    if (siteIdType == SQLITE_NULL) {
-      sqlite3_bind_null(pStmt, j++);
-    } else {
-      sqlite3_bind_blob(pStmt, j++, requestorSiteId, requestorSiteIdLen,
-                        SQLITE_STATIC);
+  // for each arg, bind.
+  for (int i = 0; i < argc; ++i) {
+    rc = sqlite3_bind_value(pStmt, i + 1, argv[i]);
+    if (rc != SQLITE_OK) {
+      pTabBase->zErrMsg = sqlite3_mprintf(
+          "error binding params to the statement to extract "
+          "changes.");
+      sqlite3_finalize(pStmt);
+      return rc;
     }
-    sqlite3_bind_int64(pStmt, j++, versionBound);
   }
 
   pCrsr->pChangesStmt = pStmt;
   return changesNext((sqlite3_vtab_cursor *)pCrsr);
+}
+
+static const char *getOperatorString(unsigned char op) {
+  // SQLITE_INDEX_CONSTRAINT_NE
+  switch (op) {
+    case SQLITE_INDEX_CONSTRAINT_EQ:
+      return "=";
+    case SQLITE_INDEX_CONSTRAINT_GT:
+      return ">";
+    case SQLITE_INDEX_CONSTRAINT_LE:
+      return "<=";
+    case SQLITE_INDEX_CONSTRAINT_LT:
+      return "<";
+    case SQLITE_INDEX_CONSTRAINT_GE:
+      return ">=";
+    case SQLITE_INDEX_CONSTRAINT_MATCH:
+      return "MATCH";
+    case SQLITE_INDEX_CONSTRAINT_LIKE:
+      return "LIKE";
+    case SQLITE_INDEX_CONSTRAINT_GLOB:
+      return "GLOB";
+    case SQLITE_INDEX_CONSTRAINT_REGEXP:
+      return "REGEXP";
+    case SQLITE_INDEX_CONSTRAINT_NE:
+      return "!=";
+    case SQLITE_INDEX_CONSTRAINT_ISNOT:
+      return "IS NOT";
+    case SQLITE_INDEX_CONSTRAINT_ISNOTNULL:
+      return "IS NOT NULL";
+    case SQLITE_INDEX_CONSTRAINT_ISNULL:
+      return "IS NULL";
+    case SQLITE_INDEX_CONSTRAINT_IS:
+      return "IS";
+    default:
+      return 0;
+  }
 }
 
 /*
@@ -444,46 +444,72 @@ static int changesFilter(sqlite3_vtab_cursor *pVtabCursor, int idxNum,
 */
 static int changesBestIndex(sqlite3_vtab *tab, sqlite3_index_info *pIdxInfo) {
   int idxNum = 0;
-  int versionIdx = -1;
-  int requestorIdx = -1;
 
+  crsql_Changes_vtab *crsqlTab = (crsql_Changes_vtab *)tab;
+  sqlite3_str *pStr = sqlite3_str_new(crsqlTab->db);
+
+  int firstConstaint = 1;
+  char *colName = 0;
+  int argvIndex = 1;
   for (int i = 0; i < pIdxInfo->nConstraint; i++) {
     const struct sqlite3_index_constraint *pConstraint =
         &pIdxInfo->aConstraint[i];
     switch (pConstraint->iColumn) {
+      case CHANGES_SINCE_VTAB_TBL:
+        // TODO: stick tbl constraint into pTab?
+        // to read out later?
+        break;
+      case CHANGES_SINCE_VTAB_PK:
+        // TODO: bind param it? o wait, it would need splitting.
+        // the clock table has pks split out.
+        break;
+      case CHANGES_SINCE_VTAB_CID:
+        colName = "cid";
+        break;
+      case CHANGES_SINCE_VTAB_CVAL:
+        break;
+      case CHANGES_SINCE_VTAB_COL_VRSN:
+        colName = "col_vrsn";
+        break;
       case CHANGES_SINCE_VTAB_DB_VRSN:
-        if (pConstraint->op != SQLITE_INDEX_CONSTRAINT_GT) {
-          tab->zErrMsg = sqlite3_mprintf(
-              "crsql_changes.version only supports the greater than "
-              "operator. "
-              "E.g., version > x");
-          return SQLITE_CONSTRAINT;
-        }
-        versionIdx = i;
+        colName = "db_vrsn";
+        break;
+      case CHANGES_SINCE_VTAB_SITE_ID:
+        colName = "site_id";
+        break;
+    }
+
+    if (colName != 0) {
+      const char *opString = getOperatorString(pConstraint->op);
+      if (opString == 0) {
+        continue;
+      }
+      if (firstConstaint) {
+        firstConstaint = 0;
+      } else {
+        sqlite3_str_appendall(pStr, " AND ");
+      }
+
+      if (pConstraint->op == SQLITE_INDEX_CONSTRAINT_ISNOTNULL ||
+          pConstraint->op == SQLITE_INDEX_CONSTRAINT_ISNULL) {
+        sqlite3_str_appendf(pStr, "%s %s", colName, opString);
+        pIdxInfo->aConstraintUsage[i].argvIndex = 0;
+        pIdxInfo->aConstraintUsage[i].omit = 1;
+      } else {
+        sqlite3_str_appendf(pStr, "%s %s ?", colName, opString);
+        pIdxInfo->aConstraintUsage[i].argvIndex = argvIndex;
+        pIdxInfo->aConstraintUsage[i].omit = 1;
+        argvIndex += 1;
+      }
+      colName = 0;
+    }
+
+    switch (pConstraint->iColumn) {
+      case CHANGES_SINCE_VTAB_DB_VRSN:
         idxNum |= 2;
         break;
       case CHANGES_SINCE_VTAB_SITE_ID:
-        if (pConstraint->op != SQLITE_INDEX_CONSTRAINT_NE &&
-            pConstraint->op != SQLITE_INDEX_CONSTRAINT_ISNOT &&
-            pConstraint->op != SQLITE_INDEX_CONSTRAINT_EQ &&
-            pConstraint->op != SQLITE_INDEX_CONSTRAINT_IS &&
-            pConstraint->op != SQLITE_INDEX_CONSTRAINT_ISNOTNULL &&
-            pConstraint->op != SQLITE_INDEX_CONSTRAINT_ISNULL) {
-          tab->zErrMsg = sqlite3_mprintf(
-              "crsql_changes.site_id only supports the IS, IS NOT, =, != "
-              "operators");
-          return SQLITE_CONSTRAINT;
-        }
-        requestorIdx = i;
-        pIdxInfo->aConstraintUsage[i].argvIndex = 2;
-        pIdxInfo->aConstraintUsage[i].omit = 1;
         idxNum |= 4;
-
-        if (pConstraint->op == SQLITE_INDEX_CONSTRAINT_EQ ||
-            pConstraint->op == SQLITE_INDEX_CONSTRAINT_IS ||
-            pConstraint->op == SQLITE_INDEX_CONSTRAINT_ISNULL) {
-          idxNum |= 8;
-        }
         break;
     }
   }
@@ -492,27 +518,16 @@ static int changesBestIndex(sqlite3_vtab *tab, sqlite3_index_info *pIdxInfo) {
   if ((idxNum & 6) == 6) {
     pIdxInfo->estimatedCost = (double)1;
     pIdxInfo->estimatedRows = 1;
-
-    pIdxInfo->aConstraintUsage[versionIdx].argvIndex = 1;
-    pIdxInfo->aConstraintUsage[versionIdx].omit = 1;
-    pIdxInfo->aConstraintUsage[requestorIdx].argvIndex = 2;
-    pIdxInfo->aConstraintUsage[requestorIdx].omit = 1;
   }
   // only the version constraint is present
   else if ((idxNum & 2) == 2) {
     pIdxInfo->estimatedCost = (double)10;
     pIdxInfo->estimatedRows = 10;
-
-    pIdxInfo->aConstraintUsage[versionIdx].argvIndex = 1;
-    pIdxInfo->aConstraintUsage[versionIdx].omit = 1;
   }
   // only the requestor constraint is present
   else if ((idxNum & 4) == 4) {
     pIdxInfo->estimatedCost = (double)2147483647;
     pIdxInfo->estimatedRows = 2147483647;
-
-    pIdxInfo->aConstraintUsage[requestorIdx].argvIndex = 1;
-    pIdxInfo->aConstraintUsage[requestorIdx].omit = 1;
   }
   // no constraints are present
   else {
@@ -521,6 +536,8 @@ static int changesBestIndex(sqlite3_vtab *tab, sqlite3_index_info *pIdxInfo) {
   }
 
   pIdxInfo->idxNum = idxNum;
+  pIdxInfo->idxStr = sqlite3_str_finish(pStr);
+  pIdxInfo->needToFreeIdxStr = 1;
   return SQLITE_OK;
 }
 
@@ -552,16 +569,13 @@ static int changesApply(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
   return SQLITE_OK;
 }
 
-// We must define a `begin` method. Not defining it causes `commit` to never be
-// invoked.
-static int changesInsertBegin(sqlite3_vtab *pVTab) { return SQLITE_OK; }
+// If xBegin is not defined xCommit is not called.
+static int xBegin(sqlite3_vtab *pVTab) { return SQLITE_OK; }
 
-static int changesInsertCommit(sqlite3_vtab *pVTab) {
+static int xCommit(sqlite3_vtab *pVTab) {
   crsql_Changes_vtab *crsqlTab = (crsql_Changes_vtab *)pVTab;
-
-  int rc = crsql_writeTrackedPeers(crsqlTab->pSeenPeers, crsqlTab->pExtData);
-  crsql_resetSeenPeers(crsqlTab->pSeenPeers);
-  return rc;
+  crsqlTab->pExtData->rowsImpacted = 0;
+  return SQLITE_OK;
 }
 
 sqlite3_module crsql_changesModule = {
@@ -579,9 +593,9 @@ sqlite3_module crsql_changesModule = {
     /* xColumn     */ changesColumn,
     /* xRowid      */ changesRowid,
     /* xUpdate     */ changesApply,
-    /* xBegin      */ changesInsertBegin,
+    /* xBegin      */ xBegin,
     /* xSync       */ 0,
-    /* xCommit     */ changesInsertCommit,
+    /* xCommit     */ xCommit,
     /* xRollback   */ 0,
     /* xFindMethod */ 0,
     /* xRename     */ 0,

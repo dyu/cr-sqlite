@@ -16,7 +16,7 @@ export default async function startSyncWith(
   args: Overwrite<
     ReplicatorArgs,
     { remoteDbId: Uint8Array | string; rx: TblRx }
-  > & { worker?: boolean }
+  > & { workerUri?: string }
 ): Promise<{ stop: () => void }> {
   const parsedArgs = {
     ...args,
@@ -27,7 +27,7 @@ export default async function startSyncWith(
   };
 
   // worker must explicitly be false to disable
-  if (args.worker !== false) {
+  if (args.workerUri) {
     if (args.localDb.filename === ":memory:") {
       throw new Error(
         "In-memory databases cannot be accessed from a web-worker and must be synced in the main thread. Set worker: false in the replicator args"
@@ -44,13 +44,16 @@ export default async function startSyncWith(
 
 function startSyncInWorker(
   uri: string,
-  args: Overwrite<ReplicatorArgs, { rx: TblRx }>
+  args: Overwrite<ReplicatorArgs, { rx: TblRx }> & { workerUri?: string }
 ) {
   const disposables: (() => void)[] = [];
 
-  const worker = new Worker(new URL("./worker.js", import.meta.url), {
-    type: "module",
-  });
+  const worker = new Worker(
+    args.workerUri || new URL("./worker.js", import.meta.url),
+    {
+      type: "module",
+    }
+  );
 
   const dbname = args.localDb.filename;
 

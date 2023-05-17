@@ -1,16 +1,3 @@
-/**
- * Copyright 2022 One Law LLC. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *     http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #include "changes-vtab-write.h"
 
 #include <string.h>
@@ -20,7 +7,6 @@
 #include "consts.h"
 #include "crsqlite.h"
 #include "ext-data.h"
-#include "seen-peers.h"
 #include "tableinfo.h"
 #include "util.h"
 
@@ -296,8 +282,6 @@ int crsql_mergeInsert(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
                                                  pTab->pExtData->tableInfosLen,
                                                  (const char *)insertTbl);
 
-  crsql_trackSeenPeer(pTab->pSeenPeers, insertSiteId, insertSiteIdLen,
-                      insertDbVrsn);
   if (tblInfo == 0) {
     *errmsg = sqlite3_mprintf(
         "crsql - could not find the schema information for table %s",
@@ -432,6 +416,8 @@ int crsql_mergeInsert(sqlite3_vtab *pVTab, int argc, sqlite3_value **argv,
   // the table.
   // Is it fine if we prevent anyone from using `rowid` on a vtab?
   // or must we convert to `without rowid`?
+  // TODO: add invocation of rowid slab algorithm here.
   *pRowid = insertDbVrsn;
+  pTab->pExtData->rowsImpacted += 1;
   return rc;
 }

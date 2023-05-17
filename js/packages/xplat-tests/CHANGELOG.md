@@ -1,5 +1,106 @@
 # @vlcn.io/xplat-tests
 
+## 0.8.0
+
+### Minor Changes
+
+- e0de95c: ANSI SQL compliance for crsql_changes, all filters available for crsql_changes, removal of tracked_peers, simplified crsql_master table
+
+### Patch Changes
+
+- 9b483aa: npm is not updating on package publish -- bump versions to try to force it
+- Updated dependencies [9b483aa]
+- Updated dependencies [e0de95c]
+  - @vlcn.io/xplat-api@0.9.0
+  - @vlcn.io/rx-tbl@0.9.0
+  - @vlcn.io/sync-p2p@0.8.0
+
+## 0.8.0-next.1
+
+### Patch Changes
+
+- npm is not updating on package publish -- bump versions to try to force it
+- Updated dependencies
+  - @vlcn.io/xplat-api@0.9.0-next.1
+  - @vlcn.io/rx-tbl@0.9.0-next.1
+  - @vlcn.io/sync-p2p@0.8.0-next.1
+
+## 0.8.0-next.0
+
+### Minor Changes
+
+- ANSI SQL compliance for crsql_changes, all filters available for crsql_changes, removal of tracked_peers, simplified crsql_master table
+
+### Patch Changes
+
+- Updated dependencies
+  - @vlcn.io/sync-p2p@0.8.0-next.0
+  - @vlcn.io/rx-tbl@0.9.0-next.0
+  - @vlcn.io/xplat-api@0.9.0-next.0
+
+## 0.7.3
+
+### Patch Changes
+
+- e5919ae: fix xcommit deadlock, bump versions on dependencies
+- Updated dependencies [e5919ae]
+  - @vlcn.io/sync-p2p@0.7.3
+  - @vlcn.io/rx-tbl@0.8.3
+  - @vlcn.io/xplat-api@0.8.2
+
+## 0.7.3-next.0
+
+### Patch Changes
+
+- fix xcommit deadlock, bump versions on dependencies
+- Updated dependencies
+  - @vlcn.io/sync-p2p@0.7.3-next.0
+  - @vlcn.io/rx-tbl@0.8.3-next.0
+  - @vlcn.io/xplat-api@0.8.2-next.0
+
+## 0.7.2
+
+### Patch Changes
+
+- Updated dependencies [c1ae5e3]
+- Updated dependencies [68ac663]
+  - @vlcn.io/rx-tbl@0.8.2
+
+## 0.7.2-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @vlcn.io/rx-tbl@0.8.2-next.1
+
+## 0.7.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @vlcn.io/rx-tbl@0.8.2-next.0
+
+## 0.7.1
+
+### Patch Changes
+
+- aad733d: --
+- Updated dependencies [aad733d]
+  - @vlcn.io/sync-p2p@0.7.2
+  - @vlcn.io/rx-tbl@0.8.1
+  - @vlcn.io/xplat-api@0.8.1
+
+## 0.7.1-next.0
+
+### Patch Changes
+
+---
+
+- Updated dependencies
+  - @vlcn.io/sync-p2p@0.7.2-next.0
+  - @vlcn.io/rx-tbl@0.8.1-next.0
+  - @vlcn.io/xplat-api@0.8.1-next.0
+
 ## 0.7.0
 
 ### Minor Changes

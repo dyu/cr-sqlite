@@ -1,5 +1,115 @@
 # @vlcn.io/wa-crsqlite
 
+## 0.10.1-next.0
+
+### Patch Changes
+
+- include fts5 & bump to sqlite 3.41.2
+- Updated dependencies
+  - @vlcn.io/wa-sqlite@0.16.1-next.0
+
+## 0.10.0
+
+### Minor Changes
+
+- e0de95c: ANSI SQL compliance for crsql_changes, all filters available for crsql_changes, removal of tracked_peers, simplified crsql_master table
+
+### Patch Changes
+
+- 9b483aa: npm is not updating on package publish -- bump versions to try to force it
+- Updated dependencies [9b483aa]
+- Updated dependencies [e0de95c]
+  - @vlcn.io/xplat-api@0.9.0
+  - @vlcn.io/wa-sqlite@0.16.0
+
+## 0.10.0-next.1
+
+### Patch Changes
+
+- npm is not updating on package publish -- bump versions to try to force it
+- Updated dependencies
+  - @vlcn.io/xplat-api@0.9.0-next.1
+  - @vlcn.io/wa-sqlite@0.16.0-next.1
+
+## 0.10.0-next.0
+
+### Minor Changes
+
+- ANSI SQL compliance for crsql_changes, all filters available for crsql_changes, removal of tracked_peers, simplified crsql_master table
+
+### Patch Changes
+
+- Updated dependencies
+  - @vlcn.io/wa-sqlite@0.16.0-next.0
+  - @vlcn.io/xplat-api@0.9.0-next.0
+
+## 0.9.4
+
+### Patch Changes
+
+- Updated dependencies
+  - @vlcn.io/wa-sqlite@0.15.4
+
+## 0.9.3
+
+### Patch Changes
+
+- e5919ae: fix xcommit deadlock, bump versions on dependencies
+- Updated dependencies [e5919ae]
+  - @vlcn.io/wa-sqlite@0.15.3
+  - @vlcn.io/xplat-api@0.8.2
+
+## 0.9.3-next.0
+
+### Patch Changes
+
+- fix xcommit deadlock, bump versions on dependencies
+- Updated dependencies
+  - @vlcn.io/wa-sqlite@0.15.3-next.0
+  - @vlcn.io/xplat-api@0.8.2-next.0
+
+## 0.9.2
+
+### Patch Changes
+
+- 2bbf074: nextjs fix and better reconnect on refocus for mobile
+- b1b77cf: js include for webpack
+- Updated dependencies [2bbf074]
+  - @vlcn.io/wa-sqlite@0.15.2
+
+## 0.9.2-next.1
+
+### Patch Changes
+
+- js include for webpack
+
+## 0.9.2-next.0
+
+### Patch Changes
+
+- nextjs fix and better reconnect on refocus for mobile
+- Updated dependencies
+  - @vlcn.io/wa-sqlite@0.15.2-next.0
+
+## 0.9.1
+
+### Patch Changes
+
+- aad733d: --
+- Updated dependencies [aad733d]
+  - @vlcn.io/wa-sqlite@0.15.1
+  - @vlcn.io/xplat-api@0.8.1
+
+## 0.9.1-next.0
+
+### Patch Changes
+
+---
+
+- Updated dependencies
+  - @vlcn.io/wa-sqlite@0.15.1-next.0
+  - @vlcn.io/xplat-api@0.8.1-next.0
+
 ## 0.9.0
 
 ### Minor Changes

@@ -46,7 +46,7 @@ class DB {
       this.#applySchema(create.schemaName);
     }
     this.#pullChangesetStmt = this.#db.prepare(
-      `SELECT "table", "pk", "cid", "val", "col_version", "db_version" FROM crsql_changes WHERE db_version > ? AND site_id != ?`
+      `SELECT "table", "pk", "cid", "val", "col_version", "db_version" FROM crsql_changes WHERE db_version > ? AND site_id IS NOT ?`
     );
     this.#pullChangesetStmt.raw(true);
 
@@ -83,7 +83,10 @@ class DB {
     since: readonly [Version, number]
   ): Changeset[] {
     // pull changes since the client last saw changes, excluding what the client itself sent us
-    const changes = this.#pullChangesetStmt.all(BigInt(since[0]), requestor);
+    const changes = this.#pullChangesetStmt.all(
+      BigInt(since[0]),
+      requestor
+    ) as any[];
     changes.forEach((c) => {
       c[4] = BigInt(c[4]);
       c[5] = BigInt(c[5]);

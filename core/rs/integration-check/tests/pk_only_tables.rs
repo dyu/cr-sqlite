@@ -1,21 +1,45 @@
-/*
- * Copyright 2022 One Law LLC. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *     http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-use core::ffi::c_char;
 use sqlite::ColumnType;
 use sqlite::Destructor;
 use sqlite::ManagedConnection;
 use sqlite::{Connection, ResultCode};
 use sqlite_nostd as sqlite;
+
+integration_utils::counter_setup!(2);
+
+#[test]
+fn create_pkonlytable() {
+    // just expecting not to throw
+    create_pkonlytable_impl().unwrap();
+    decrement_counter();
+}
+
+#[test]
+fn insert_pkonly_row() {
+    insert_pkonly_row_impl().unwrap();
+    decrement_counter();
+}
+
+#[test]
+fn modify_pkonly_row() {
+    // inserts then updates then syncs the value of a pk column
+    // inserts, syncs, then updates then syncs
+    //
+    // repeat for single column keys and compound
+    // modify_pkonly_row_impl().unwrap()
+}
+
+#[test]
+/// Test a common configuration of a junction/edge table (with no edge data)
+/// to relate two relations.
+fn junction_table() {
+    // junction_table_impl().unwrap();
+}
+
+// https://discord.com/channels/989870439897653248/989870440585494530/1081084118680485938
+#[test]
+fn dicord_report_1() {
+    discord_report_1_impl().unwrap();
+}
 
 fn sync_left_to_right(
     l: &dyn Connection,
@@ -79,121 +103,71 @@ fn sync_left_to_right(
 //     Ok(sqlite::ResultCode::OK)
 // }
 
-fn opendb() -> Result<ManagedConnection, ResultCode> {
-    let connection = sqlite::open(sqlite::strlit!(":memory:"))?;
-    connection.enable_load_extension(true)?;
-    connection.load_extension("../../dbg/crsqlite", None)?;
-    Ok(connection)
-}
-
-fn closedb(db: ManagedConnection) -> Result<(), ResultCode> {
-    db.exec_safe("SELECT crsql_finalize()")?;
-    // no close, it gets called on drop.
-    Ok(())
-}
-
 fn setup_schema(db: &ManagedConnection) -> Result<ResultCode, ResultCode> {
     db.exec_safe("CREATE TABLE foo (id INTEGER PRIMARY KEY);")?;
     db.exec_safe("SELECT crsql_as_crr('foo');")
 }
 
-#[test]
-fn create_pkonlytable() {
-    // just expecting not to throw
-    create_pkonlytable_impl().unwrap();
-}
-
-#[test]
-fn insert_pkonly_row() {
-    insert_pkonly_row_impl().unwrap();
-}
-
-#[test]
-fn modify_pkonly_row() {
-    // inserts then updates then syncs the value of a pk column
-    // inserts, syncs, then updates then syncs
-    //
-    // repeat for single column keys and compound
-    // modify_pkonly_row_impl().unwrap()
-}
-
-#[test]
-/// Test a common configuration of a junction/edge table (with no edge data)
-/// to relate two relations.
-fn junction_table() {
-    // junction_table_impl().unwrap();
-}
-
-// https://discord.com/channels/989870439897653248/989870440585494530/1081084118680485938
-#[test]
-fn dicord_report_1() {
-    discord_report_1_impl().unwrap();
-}
-
 fn create_pkonlytable_impl() -> Result<(), ResultCode> {
-    let db_a = opendb()?;
+    let db_a = integration_utils::opendb()?;
 
-    setup_schema(&db_a)?;
-    closedb(db_a)?;
+    setup_schema(&db_a.db)?;
     Ok(())
 }
 
 fn insert_pkonly_row_impl() -> Result<(), ResultCode> {
-    let db_a = opendb()?;
-    let db_b = opendb()?;
+    let db_a = integration_utils::opendb()?;
+    let db_b = integration_utils::opendb()?;
 
     fn setup_schema(db: &ManagedConnection) -> Result<ResultCode, ResultCode> {
         db.exec_safe("CREATE TABLE foo (id INTEGER PRIMARY KEY);")?;
         db.exec_safe("SELECT crsql_as_crr('foo');")
     }
 
-    setup_schema(&db_a)?;
-    setup_schema(&db_b)?;
+    setup_schema(&db_a.db)?;
+    setup_schema(&db_b.db)?;
 
-    let stmt = db_a.prepare_v2("INSERT INTO foo (id) VALUES (?);")?;
+    let stmt = db_a.db.prepare_v2("INSERT INTO foo (id) VALUES (?);")?;
     stmt.bind_int(1, 1)?;
     stmt.step()?;
 
-    let stmt = db_a.prepare_v2("SELECT * FROM crsql_changes;")?;
+    let stmt = db_a.db.prepare_v2("SELECT * FROM crsql_changes;")?;
     let result = stmt.step()?;
     assert_eq!(result, ResultCode::ROW);
 
-    sync_left_to_right(&db_a, &db_b, -1)?;
+    sync_left_to_right(&db_a.db, &db_b.db, -1)?;
 
-    let stmt = db_b.prepare_v2("SELECT * FROM foo;")?;
+    let stmt = db_b.db.prepare_v2("SELECT * FROM foo;")?;
     let result = stmt.step()?;
     assert_eq!(result, ResultCode::ROW);
     let id = stmt.column_int(0)?;
     assert_eq!(id, 1);
     let result = stmt.step()?;
     assert_eq!(result, ResultCode::DONE);
-
-    closedb(db_a)?;
-    closedb(db_b)?;
     Ok(())
 }
 
 fn modify_pkonly_row_impl() -> Result<(), ResultCode> {
-    let db_a = opendb()?;
-    let db_b = opendb()?;
+    let db_a = integration_utils::opendb()?;
+    let db_b = integration_utils::opendb()?;
 
     fn setup_schema(db: &ManagedConnection) -> Result<ResultCode, ResultCode> {
         db.exec_safe("CREATE TABLE foo (id INTEGER PRIMARY KEY);")?;
         db.exec_safe("SELECT crsql_as_crr('foo');")
     }
 
-    setup_schema(&db_a)?;
-    setup_schema(&db_b)?;
+    setup_schema(&db_a.db)?;
+    setup_schema(&db_b.db)?;
 
-    let stmt = db_a.prepare_v2("INSERT INTO foo (id) VALUES (1);")?;
+    let stmt = db_a.db.prepare_v2("INSERT INTO foo (id) VALUES (1);")?;
     stmt.step()?;
 
-    let stmt = db_a.prepare_v2("UPDATE foo SET id = 2 WHERE id = 1;")?;
+    let stmt = db_a.db.prepare_v2("UPDATE foo SET id = 2 WHERE id = 1;")?;
     stmt.step()?;
 
-    sync_left_to_right(&db_a, &db_b, -1)?;
+    sync_left_to_right(&db_a.db, &db_b.db, -1)?;
 
-    let stmt = db_b.prepare_v2("SELECT * FROM foo;")?;
+    let stmt = db_b.db.prepare_v2("SELECT * FROM foo;")?;
     let result = stmt.step()?;
     assert_eq!(result, ResultCode::ROW);
     let id = stmt.column_int(0)?;
@@ -201,8 +175,6 @@ fn modify_pkonly_row_impl() -> Result<(), ResultCode> {
     let result = stmt.step()?;
     assert_eq!(result, ResultCode::DONE);
 
-    closedb(db_a)?;
-    closedb(db_b)?;
     Ok(())
 }
 
@@ -210,23 +182,26 @@ fn modify_pkonly_row_impl() -> Result<(), ResultCode> {
 // delete event on update of primary key. We're creating a synthetic one
 // on read from `changes` when the target row is missing.
 fn junction_table_impl() -> Result<(), ResultCode> {
-    let db_a = opendb()?;
-    let db_b = opendb()?;
+    let db_a = integration_utils::opendb()?;
+    let db_b = integration_utils::opendb()?;
 
     fn setup_schema(db: &ManagedConnection) -> Result<ResultCode, ResultCode> {
         db.exec_safe("CREATE TABLE jx (id1, id2, PRIMARY KEY(id1, id2));")?;
         db.exec_safe("SELECT crsql_as_crr('jx');")
     }
 
-    setup_schema(&db_a)?;
-    setup_schema(&db_b)?;
+    setup_schema(&db_a.db)?;
+    setup_schema(&db_b.db)?;
 
-    db_a.prepare_v2("INSERT INTO jx VALUES (1, 2);")?.step()?;
-    db_a.prepare_v2("UPDATE jx SET id2 = 3 WHERE id1 = 1 AND id2 = 2")?
+    db_a.db
+        .prepare_v2("INSERT INTO jx VALUES (1, 2);")?
+        .step()?;
+    db_a.db
+        .prepare_v2("UPDATE jx SET id2 = 3 WHERE id1 = 1 AND id2 = 2")?
         .step()?;
 
-    sync_left_to_right(&db_a, &db_b, -1)?;
-    let stmt = db_b.prepare_v2("SELECT * FROM jx;")?;
+    sync_left_to_right(&db_a.db, &db_b.db, -1)?;
+    let stmt = db_b.db.prepare_v2("SELECT * FROM jx;")?;
     let result = stmt.step()?;
     assert_eq!(result, ResultCode::ROW);
     let id1 = stmt.column_int(0)?;
@@ -236,20 +211,21 @@ fn junction_table_impl() -> Result<(), ResultCode> {
     let result = stmt.step()?;
     assert_eq!(result, ResultCode::DONE);
 
-    db_b.prepare_v2("UPDATE jx SET id1 = 2 WHERE id1 = 1 AND id2 = 3")?
+    db_b.db
+        .prepare_v2("UPDATE jx SET id1 = 2 WHERE id1 = 1 AND id2 = 3")?
         .step()?;
 
     println!("A before sync");
     // print_changes(&db_a, None)?;
 
-    sync_left_to_right(&db_b, &db_a, -1)?;
+    sync_left_to_right(&db_b.db, &db_a.db, -1)?;
 
     println!("B");
     // print_changes(&db_b, None)?;
     println!("A after sync");
     // print_changes(&db_a, None)?;
 
-    let stmt = db_a.prepare_v2("SELECT * FROM jx;")?;
+    let stmt = db_a.db.prepare_v2("SELECT * FROM jx;")?;
     let result = stmt.step()?;
     assert_eq!(result, ResultCode::ROW);
     let id1 = stmt.column_int(0)?;
@@ -267,19 +243,18 @@ fn junction_table_impl() -> Result<(), ResultCode> {
     // check it
     // delete the edge
     // check it
-
-    closedb(db_a)?;
-    closedb(db_b)?;
     Ok(())
 }
 
 fn discord_report_1_impl() -> Result<(), ResultCode> {
-    let db_a = opendb()?;
-    db_a.exec_safe("CREATE TABLE IF NOT EXISTS data (id NUMBER PRIMARY KEY);")?;
-    db_a.exec_safe("SELECT crsql_as_crr('data')")?;
-    db_a.exec_safe("INSERT INTO data VALUES (42) ON CONFLICT DO NOTHING;")?;
+    let db_a = integration_utils::opendb()?;
+    db_a.db
+        .exec_safe("CREATE TABLE IF NOT EXISTS data (id NUMBER PRIMARY KEY);")?;
+    db_a.db.exec_safe("SELECT crsql_as_crr('data')")?;
+    db_a.db
+        .exec_safe("INSERT INTO data VALUES (42) ON CONFLICT DO NOTHING;")?;
 
-    let stmt = db_a.prepare_v2("SELECT * FROM crsql_changes")?;
+    let stmt = db_a.db.prepare_v2("SELECT * FROM crsql_changes")?;
 
     assert_eq!(stmt.step()?, ResultCode::ROW);
 
@@ -298,6 +273,5 @@ fn discord_report_1_impl() -> Result<(), ResultCode> {
 
     assert_eq!(stmt.step()?, ResultCode::DONE);
 
-    closedb(db_a)?;
     Ok(())
 }

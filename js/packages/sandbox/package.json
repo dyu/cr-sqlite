@@ -1,0 +1,19 @@
+{
+  "name": "sandbox",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "scripts": {
+    "start:ui": "vite",
+    "tsc": "tsc --noEmit",
+    "preview": "vite preview",
+    "bld": "vite build",
+    "test:unit": "vitest",
+    "test": "echo 'No tests yet'",
+    "deep-clean": "rm -rf ./dist || true && rm tsconfig.tsbuildinfo || true"
+  },
+  "devDependencies": {
+    "@vlcn.io/crsqlite-wasm": "workspace:*",
+    "vite": "^4.2.2"
+  }
+}

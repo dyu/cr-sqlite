@@ -1,16 +1,3 @@
-/**
- * Copyright 2022 One Law LLC. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *     http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #include "crsqlite.h"
 
 #include <assert.h>
@@ -282,11 +269,11 @@ static void teste2e() {
   // printf("db2sid: %s\n", db2siteid);
   // printf("db3sid: %s\n", db3siteid);
   // printf("tempsid: %s\n", tmpSiteid);
-  assert(strcmp(tmpSiteid, db1siteid) == 0);
+  assert(strcmp(tmpSiteid, "NULL") == 0);
 
   rc = sqlite3_step(pStmt3);
   assert(rc == SQLITE_ROW);
-  assert(strcmp((const char *)sqlite3_column_text(pStmt3, 0), db2siteid) == 0);
+  assert(strcmp((const char *)sqlite3_column_text(pStmt3, 0), "NULL") == 0);
   sqlite3_finalize(pStmt3);
 
   rc = sqlite3_prepare_v2(db2, "SELECT * FROM foo ORDER BY a ASC", -1, &pStmt2,
@@ -367,12 +354,17 @@ static void testSelectChangesAfterChangingColumnName() {
   // insert some rows post schema change
   rc = sqlite3_exec(db, "INSERT INTO foo VALUES (2, 3);", 0, 0, 0);
   rc += sqlite3_prepare_v2(
-      db, "SELECT * FROM crsql_changes WHERE db_version > 1", -1, &pStmt, 0);
+      db, "SELECT * FROM crsql_changes WHERE db_version >= 1", -1, &pStmt, 0);
   assert(rc == SQLITE_OK);
   numRows = 0;
   // Columns that no long exist post-alter should not
   // be retained for replication
+  int first = 1;
   while ((rc = sqlite3_step(pStmt)) == SQLITE_ROW) {
+    if (first == 1) {
+      first = 0;
+      continue;
+    }
     assert(strcmp("foo", (const char *)sqlite3_column_text(
                              pStmt, CHANGES_SINCE_VTAB_TBL)) == 0);
     assert(strcmp("2", (const char *)sqlite3_column_text(
@@ -515,14 +507,6 @@ static void testLamportCondition() {
   assert(sqlite3_column_int64(pStmt, 0) == 33);
   sqlite3_finalize(pStmt);
 
-  sqlite3_prepare_v2(db1, "SELECT count(*) FROM crsql_tracked_peers", -1,
-                     &pStmt, 0);
-  rc = sqlite3_step(pStmt);
-  assert(rc == SQLITE_ROW);
-  int count = sqlite3_column_int(pStmt, 0);
-  assert(count == 1);
-  sqlite3_finalize(pStmt);
-
   rc = crsql_close(db1);
   assert(rc == SQLITE_OK);
   rc += crsql_close(db2);
@@ -607,7 +591,7 @@ static void testPullingOnlyLocalChanges() {
   // `IS NOT NULL` also fails to call the virtual table bestIndex function with
   // any constraints p pIdxInfo->nConstraint
   sqlite3_prepare_v2(db,
-                     "SELECT count(*) FROM crsql_changes WHERE site_id = NULL",
+                     "SELECT count(*) FROM crsql_changes WHERE site_id IS NULL",
                      -1, &pStmt, 0);
 
   rc = sqlite3_step(pStmt);
@@ -615,12 +599,13 @@ static void testPullingOnlyLocalChanges() {
 
   int count = sqlite3_column_int(pStmt, 0);
   // we created 2 local changes, we should get 2 changes back
+  printf("count: %d\n", count);
   assert(count == 2);
   sqlite3_finalize(pStmt);
 
-  sqlite3_prepare_v2(db,
-                     "SELECT count(*) FROM crsql_changes WHERE site_id != NULL",
-                     -1, &pStmt, 0);
+  sqlite3_prepare_v2(
+      db, "SELECT count(*) FROM crsql_changes WHERE site_id IS NOT NULL", -1,
+      &pStmt, 0);
   rc = sqlite3_step(pStmt);
   assert(rc == SQLITE_ROW);
   count = sqlite3_column_int(pStmt, 0);

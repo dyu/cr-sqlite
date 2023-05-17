@@ -1,16 +1,3 @@
-/**
- * Copyright 2022 One Law LLC. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *     http://www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #include "changes-vtab-read.h"
 
 #include <assert.h>
@@ -36,23 +23,14 @@ static void testChangesQueryForTable() {
   rc += crsql_getTableInfo(db, "foo", &tblInfo, &err);
   assert(rc == SQLITE_OK);
 
-  char *query = crsql_changesQueryForTable(tblInfo, 6);
+  char *query = crsql_changesQueryForTable(tblInfo);
 
   assert(strcmp(query,
                 "SELECT      \'foo\' as tbl,      quote(\"a\") as pks,      "
                 "__crsql_col_name as cid,      __crsql_col_version as "
                 "col_vrsn,      __crsql_db_version as db_vrsn,      "
-                "__crsql_site_id as site_id    FROM \"foo__crsql_clock\"    "
-                "WHERE      site_id IS NOT ?    AND      db_vrsn > ?") == 0);
-  sqlite3_free(query);
-
-  query = crsql_changesQueryForTable(tblInfo, 8);
-  assert(strcmp(query,
-                "SELECT      \'foo\' as tbl,      quote(\"a\") as pks,      "
-                "__crsql_col_name as cid,      __crsql_col_version as "
-                "col_vrsn,      __crsql_db_version as db_vrsn,      "
-                "__crsql_site_id as site_id    FROM \"foo__crsql_clock\"    "
-                "WHERE      site_id IS  ?    AND      db_vrsn > ?") == 0);
+                "__crsql_site_id as site_id    FROM \"foo__crsql_clock\"") ==
+         0);
   sqlite3_free(query);
 
   printf("\t\e[0;32mSuccess\e[0m\n");
@@ -81,36 +59,33 @@ static void testChangesUnionQuery() {
   rc += crsql_getTableInfo(db, "bar", &tblInfos[1], &err);
   assert(rc == SQLITE_OK);
 
-  char *query = crsql_changesUnionQuery(tblInfos, 2, 6);
+  char *query = crsql_changesUnionQuery(tblInfos, 2, "");
   assert(
-      strcmp(
-          query,
-          "SELECT tbl, pks, cid, col_vrsn, db_vrsn, site_id FROM (SELECT      "
-          "\'foo\' as tbl,      quote(\"a\") as pks,      __crsql_col_name as "
-          "cid,      __crsql_col_version as col_vrsn,      __crsql_db_version "
-          "as db_vrsn,      __crsql_site_id as site_id    FROM "
-          "\"foo__crsql_clock\"    WHERE      site_id IS NOT ?    AND      "
-          "db_vrsn > ? UNION SELECT      \'bar\' as tbl,      quote(\"x\") as "
-          "pks,      __crsql_col_name as cid,      __crsql_col_version as "
-          "col_vrsn,      __crsql_db_version as db_vrsn,      __crsql_site_id "
-          "as site_id    FROM \"bar__crsql_clock\"    WHERE      site_id IS "
-          "NOT ?    AND      db_vrsn > ?) ORDER BY db_vrsn, tbl ASC") == 0);
+      strcmp(query,
+             "SELECT tbl, pks, cid, col_vrsn, db_vrsn, site_id FROM (SELECT    "
+             "  'foo' as tbl,      quote(\"a\") as pks,      __crsql_col_name "
+             "as cid,      __crsql_col_version as col_vrsn,      "
+             "__crsql_db_version as db_vrsn,      __crsql_site_id as site_id   "
+             " FROM \"foo__crsql_clock\" UNION SELECT      'bar' as tbl,      "
+             "quote(\"x\") as pks,      __crsql_col_name as cid,      "
+             "__crsql_col_version as col_vrsn,      __crsql_db_version as "
+             "db_vrsn,      __crsql_site_id as site_id    FROM "
+             "\"bar__crsql_clock\")  ORDER BY db_vrsn, tbl ASC") == 0);
   sqlite3_free(query);
 
-  query = crsql_changesUnionQuery(tblInfos, 2, 8);
+  query = crsql_changesUnionQuery(tblInfos, 2, "site_id IS ? AND db_vrsn > ?");
   assert(
-      strcmp(
-          query,
-          "SELECT tbl, pks, cid, col_vrsn, db_vrsn, site_id FROM (SELECT      "
-          "\'foo\' as tbl,      quote(\"a\") as pks,      __crsql_col_name as "
-          "cid,      __crsql_col_version as col_vrsn,      __crsql_db_version "
-          "as db_vrsn,      __crsql_site_id as site_id    FROM "
-          "\"foo__crsql_clock\"    WHERE      site_id IS  ?    AND      "
-          "db_vrsn > ? UNION SELECT      \'bar\' as tbl,      quote(\"x\") as "
-          "pks,      __crsql_col_name as cid,      __crsql_col_version as "
-          "col_vrsn,      __crsql_db_version as db_vrsn,      __crsql_site_id "
-          "as site_id    FROM \"bar__crsql_clock\"    WHERE      site_id IS  ? "
-          "   AND      db_vrsn > ?) ORDER BY db_vrsn, tbl ASC") == 0);
+      strcmp(query,
+             "SELECT tbl, pks, cid, col_vrsn, db_vrsn, site_id FROM (SELECT    "
+             "  'foo' as tbl,      quote(\"a\") as pks,      __crsql_col_name "
+             "as cid,      __crsql_col_version as col_vrsn,      "
+             "__crsql_db_version as db_vrsn,      __crsql_site_id as site_id   "
+             " FROM \"foo__crsql_clock\" UNION SELECT      'bar' as tbl,      "
+             "quote(\"x\") as pks,      __crsql_col_name as cid,      "
+             "__crsql_col_version as col_vrsn,      __crsql_db_version as "
+             "db_vrsn,      __crsql_site_id as site_id    FROM "
+             "\"bar__crsql_clock\") WHERE site_id IS ? AND db_vrsn > ? ORDER "
+             "BY db_vrsn, tbl ASC") == 0);
   sqlite3_free(query);
 
   printf("\t\e[0;32mSuccess\e[0m\n");

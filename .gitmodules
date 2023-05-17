@@ -7,4 +7,6 @@
 [submodule "js/deps/wa-sqlite"]
 	path = js/deps/wa-sqlite
 	url = git@github.com:dyu/wa-sqlite.git
-	branch = main
+	branch = cr-sqlite
+[submodule "sqlite-rs-embedded"]
+	url = git@github.com:vlcn-io/sqlite-rs-embedded.git
