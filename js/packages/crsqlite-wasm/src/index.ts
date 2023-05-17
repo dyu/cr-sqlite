@@ -1,3 +1,4 @@
+// @ts-ignore
 import SQLiteAsyncESMFactory from "@dyu/wa-sqlite/dist/wa-sqlite-async.mjs";
 // @ts-ignore
 import wasmUrl from "@dyu/wa-sqlite/dist/wa-sqlite-async.wasm?url";
