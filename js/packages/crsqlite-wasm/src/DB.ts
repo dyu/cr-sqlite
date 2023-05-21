@@ -1,4 +1,11 @@
-import { DBAsync, StmtAsync, TXAsync, UpdateType } from "@vlcn.io/xplat-api";
+import {
+  DBAsync,
+  StmtAsync,
+  TXAsync,
+  UpdateType,
+  cryb64,
+  firstPick,
+} from "@vlcn.io/xplat-api";
 import { SQLITE_UTF8 } from "@dyu/wa-sqlite";
 import { serialize, topLevelMutex } from "./serialize.js";
 import Stmt from "./Stmt.js";
@@ -27,7 +34,11 @@ export class DB implements DBAsync {
   #closed = false;
   #tx: TX;
 
-  constructor(public api: SQLiteAPI, public db: number, public readonly filename: string) {
+  constructor(
+    public api: SQLiteAPI,
+    public db: number,
+    public readonly filename: string
+  ) {
     this.#tx = new TX(
       api,
       db,
@@ -46,6 +57,51 @@ export class DB implements DBAsync {
       throw new Error("Site id already set");
     }
     this.#siteid = siteid;
+  }
+
+  async automigrateTo(
+    schemaName: string,
+    schemaContent: string
+  ): Promise<"noop" | "apply" | "migrate"> {
+    // less safety checks for local db than server db.
+    const version = cryb64(schemaContent);
+    const storedName = firstPick(
+      await this.execA(
+        `SELECT value FROM crsql_master WHERE key = 'schema_name'`
+      )
+    );
+    const storedVersion = firstPick(
+      await this.execA(
+        `SELECT value FROM crsql_master WHERE key = 'schema_version'`
+      )
+    ) as bigint | number | undefined;
+
+    if (storedName === schemaName && BigInt(storedVersion || 0) === version) {
+      return "noop";
+    }
+
+    const ret =
+      storedName === undefined || storedName !== schemaName
+        ? "apply"
+        : "migrate";
+
+    await this.tx(async (tx) => {
+      if (storedVersion == null) {
+        await tx.exec(schemaContent);
+      } else {
+        await tx.exec(`SELECT crsql_automigrate(?)`, [schemaContent]);
+      }
+      await tx.exec(
+        `INSERT OR REPLACE INTO crsql_master (key, value) VALUES (?, ?)`,
+        ["schema_version", version]
+      );
+      await tx.exec(
+        `INSERT OR REPLACE INTO crsql_master (key, value) VALUES (?, ?)`,
+        ["schema_name", schemaName]
+      );
+    });
+
+    return ret;
   }
 
   execMany(sql: string[]): Promise<any> {
