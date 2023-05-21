@@ -7,7 +7,7 @@
     "pnpm": ">=7"
   },
   "devDependencies": {
-    "turbo": "^1.9.3"
+    "turbo": "^1.9.6"
   },
   "scripts": {
     "build": "cd core && make loadable",
