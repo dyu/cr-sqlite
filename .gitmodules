@@ -9,3 +9,7 @@
 	url = git@github.com:vlcn-io/wa-sqlite.git
 [submodule "sqlite-rs-embedded"]
 	url = git@github.com:vlcn-io/sqlite-rs-embedded.git
+[submodule "js/deps/dyu/wa-sqlite"]
+	path = js/deps/dyu/wa-sqlite
+	url = git@github.com:dyu/wa-sqlite.git
+	branch = cr-sqlite

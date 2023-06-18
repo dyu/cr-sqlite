@@ -18,3 +18,4 @@ packages:
   - "js/packages/sandbox-node"
   - "js/tsbuild-all"
   - "js/deps/wa-sqlite"
+  - "js/deps/dyu/wa-sqlite"
